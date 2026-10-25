@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>For you</title>
+  <!-- Google Fonts: only external resource, used for the typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;1,400;1,600&family=Nunito:wght@400;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
+  <style>
+/* ===== COLORS & FONTS (change these to restyle everything) ===== */
+:root {
+  --bg1: #fff4f1;
+  --bg2: #f1e9fb;
+  --ink: #4b3443;
+  --soft: #8a6f80;
+  --rose: #e58aa0;
+  --rose-deep: #c9607f;
+  --glass: rgba(255, 255, 255, .55);
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Nunito', system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  color: var(--ink);
+  line-height: 1.7;
+  background: linear-gradient(160deg, var(--bg1), var(--bg2) 55%, #ffe9ee) fixed;
+  overflow-x: hidden;
+}
+body.locked { overflow: hidden; }
+.hidden { opacity: 0; pointer-events: none; }
+
+/* Background shapes */
+.blob { position: fixed; border-radius: 50%; filter: blur(70px); opacity: .5; z-index: 0; animation: drift 14s ease-in-out infinite alternate; }
+.b1 { width: 340px; height: 340px; background: #ffc9d6; top: -80px; left: -80px; }
+.b2 { width: 380px; height: 380px; background: #d9c8f5; bottom: -100px; right: -100px; animation-delay: -6s; }
+@keyframes drift { to { transform: translate(40px, 30px) scale(1.12); } }
+#particles { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+
+/* ===== Opening screen ===== */
+.intro {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 24px;
+  background: linear-gradient(160deg, var(--bg1), var(--bg2));
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+.intro.gone { opacity: 0; transform: scale(1.06); pointer-events: none; }
+.intro-inner { max-width: 640px; }
+.intro h1 {
+  font-family: var(--serif); font-style: italic; font-weight: 400;
+  font-size: clamp(2.2rem, 7vw, 4rem); line-height: 1.2;
+  animation: rise 1.4s ease both;
+}
+.intro p { margin: 18px 0 36px; color: var(--soft); font-size: 1.1rem; animation: rise 1.4s .5s ease both; }
+.intro .btn { animation: rise 1.4s 1s ease backwards, glow 3s 2.4s ease-in-out infinite; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+
+/* ===== Buttons ===== */
+.btn {
+  font-family: var(--sans); font-size: 1.05rem; font-weight: 600; color: #fff;
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  border: 0; border-radius: 999px; padding: 15px 38px; cursor: pointer;
+  box-shadow: 0 10px 30px rgba(201, 96, 127, .35);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+.btn:hover { transform: translateY(-3px); box-shadow: 0 14px 36px rgba(201, 96, 127, .45); }
+.btn:focus-visible, .flip:focus-visible, .nav a:focus-visible { outline: 3px solid var(--rose-deep); outline-offset: 3px; }
+@keyframes glow { 50% { box-shadow: 0 10px 44px rgba(229, 138, 160, .8); } }
+
+/* ===== Navigation ===== */
+.nav {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 40;
+  display: flex; gap: 4px; max-width: calc(100% - 24px); overflow-x: auto;
+  padding: 6px; border-radius: 999px; background: var(--glass);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, .7); transition: opacity 1s ease;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav.visible, #main.visible { opacity: 1; pointer-events: auto; }
+#main { transition: opacity 1.2s ease; position: relative; z-index: 2; }
+.nav a {
+  color: var(--soft); text-decoration: none; font-size: .85rem; white-space: nowrap;
+  padding: 6px 14px; border-radius: 999px; transition: background .3s, color .3s;
+}
+.nav a:hover, .nav a.active { background: #fff; color: var(--rose-deep); }
+
+/* ===== Sections ===== */
+.section { min-height: 100vh; padding: 110px 22px 60px; max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; justify-content: center; }
+h2 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: clamp(1.9rem, 5vw, 2.8rem); text-align: center; margin-bottom: 14px; }
+.hint { text-align: center; color: var(--soft); font-size: .9rem; margin-bottom: 30px; }
+.section > h2 + .grid, .section > h2 + .promises { margin-top: 30px; }
+
+.glass {
+  background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, .75); border-radius: 26px;
+  box-shadow: 0 12px 40px rgba(120, 80, 110, .12);
+}
+
+/* Reveal on scroll */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 1s ease, transform 1s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ===== Apology ===== */
+.greeting { font-family: var(--serif); font-style: italic; font-size: 1.5rem; color: var(--rose-deep); text-align: center; margin-bottom: 22px; }
+.apology-card { padding: clamp(26px, 5vw, 56px); }
+.apology-text { font-family: var(--serif); font-size: clamp(1.2rem, 3vw, 1.7rem); line-height: 1.8; }
+.word { opacity: 0; display: inline-block; transform: translateY(8px); transition: opacity .7s ease, transform .7s ease; }
+.apology-card.in .word { opacity: 1; transform: none; }
+
+/* ===== Grids & cards ===== */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+
+.flip { perspective: 1000px; height: 210px; cursor: pointer; border-radius: 26px; }
+.flip-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .8s cubic-bezier(.3, .7, .2, 1); }
+.flip.on .flip-inner { transform: rotateY(180deg); }
+@media (hover: hover) { .flip:hover .flip-inner { transform: rotateY(180deg); } }
+.face {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+  padding: 24px; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+}
+.face.front { font-family: var(--serif); font-style: italic; font-size: 1.35rem; }
+.face.back { transform: rotateY(180deg); font-size: .98rem; color: var(--soft); background: rgba(255, 255, 255, .85); }
+
+.memory { padding: 30px 24px; text-align: center; transition: transform .4s ease, box-shadow .4s ease, opacity 1s ease; }
+.memory:hover { transform: translateY(-6px); box-shadow: 0 18px 46px rgba(120, 80, 110, .2); }
+.memory .icon { font-size: 1.8rem; display: inline-block; animation: float 5s ease-in-out infinite; }
+.memory h3 { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 1.3rem; margin: 10px 0 6px; }
+.memory p { color: var(--soft); font-size: .95rem; }
+@keyframes float { 50% { transform: translateY(-8px); } }
+
+/* ===== Promises ===== */
+.promises { display: flex; flex-direction: column; gap: 16px; max-width: 640px; margin: 0 auto; width: 100%; }
+.promise { padding: 22px 26px; border-left: 4px solid var(--rose); display: flex; gap: 14px; align-items: center; transition: transform .4s ease, opacity 1s ease; }
+.promise:hover { transform: translateX(8px); }
+.promise span { color: var(--rose-deep); font-size: 1.3rem; }
+.promise:nth-child(even) { margin-left: 24px; }
+
+/* ===== Final ===== */
+.final { text-align: center; align-items: center; }
+.final-text { font-family: var(--serif); font-style: italic; font-size: clamp(1.5rem, 4.5vw, 2.6rem); line-height: 1.5; max-width: 720px; margin-bottom: 40px; }
+.response { max-height: 0; opacity: 0; overflow: hidden; padding: 0 30px; margin-top: 0; max-width: 560px; transition: all 1.2s ease; }
+.response.show { max-height: 400px; opacity: 1; padding: 32px 30px; margin-top: 36px; }
+.response p { font-family: var(--serif); font-size: 1.35rem; }
+.signature { margin-top: 14px; color: var(--rose-deep); font-style: italic; font-size: 1.1rem !important; }
+
+/* Respect people who prefer less motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: .01s !important; }
+  html { scroll-behavior: auto; }
+}
+@media (max-width: 600px) { .promise:nth-child(even) { margin-left: 0; } }
+
+
+/* ===== v2: more life ===== */
+body{background:linear-gradient(120deg,#fff1f0,#f1e6fb,#ffe6ee,#e6efff,#fff1f0);background-size:300% 300%;animation:aurora 28s ease-in-out infinite}
+@keyframes aurora{50%{background-position:100% 50%}}
+#progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:60;background:linear-gradient(90deg,var(--rose),#b99be8);transition:width .15s}
+h2{font-size:clamp(2.2rem,7vw,3.6rem);background:linear-gradient(90deg,var(--rose-deep),#8b6fc4,var(--rose-deep));background-size:200% auto;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 6s linear infinite}
+@keyframes shine{to{background-position:200% center}}
+
+/* Envelope intro */
+.envelope{position:relative;width:240px;height:160px;margin:24px auto 46px;background:#fff;border-radius:8px;box-shadow:0 20px 50px rgba(150,90,120,.25);cursor:pointer;animation:rise 1.4s .8s ease backwards,bob 4s 2.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.envelope .letter{position:absolute;z-index:1;left:14px;right:14px;top:10px;height:130px;background:#fffaf5;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:transform 1s .4s ease;display:flex;align-items:center;justify-content:center;font-family:'Caveat',cursive;font-size:1.8rem;color:var(--rose-deep)}
+.envelope .front{position:absolute;inset:0;z-index:2;background:linear-gradient(#fff,#fdeef2);clip-path:polygon(0 100%,100% 100%,100% 35%,50% 65%,0 35%);border-radius:8px}
+.envelope .flap{position:absolute;inset:0 0 auto 0;z-index:3;height:90px;background:linear-gradient(#fbe3ea,#f6cdd9);clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top;transition:transform .7s ease;border-radius:8px 8px 0 0}
+.envelope .seal{position:absolute;z-index:4;left:50%;top:88px;transform:translate(-50%,-50%);width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e98aa5,#b94766);color:#fff;display:grid;place-items:center;box-shadow:0 4px 10px rgba(150,40,80,.4);transition:opacity .4s,transform .4s}
+.envelope.open{animation:none}
+.envelope.open .seal{opacity:0;transform:translate(-50%,-50%) scale(1.6)}
+.envelope.open .flap{transform:rotateX(180deg);z-index:0}
+.envelope.open .letter{transform:translateY(-55px)}
+
+/* Polaroid memories */
+.memory{background:#fff;padding:14px 14px 22px;border-radius:6px;box-shadow:0 14px 34px rgba(120,80,110,.18);rotate:var(--r,0deg);transition:transform .4s ease,box-shadow .4s ease,opacity 1s ease,rotate .4s ease,scale .4s ease;backdrop-filter:none;-webkit-backdrop-filter:none}
+.memory:nth-child(1){--r:-3deg}.memory:nth-child(2){--r:2.5deg}.memory:nth-child(3){--r:-1.5deg}.memory:nth-child(4){--r:3deg}
+.memory:hover{rotate:0deg;scale:1.05}
+.memory .photo{
+  height:260px;
+  border-radius:3px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#f5f5f5;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+
+.memory .photo img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  border-radius:3px;
+  display:block;
+}
+.memory:nth-child(even) .photo{background:linear-gradient(135deg,#d8e6ff,#ffe3d1)}
+
+.memory h3{font-family:'Caveat',cursive;font-style:normal;font-weight:600;font-size:1.8rem;color:var(--rose-deep)}
+
+/* Flip card colours */
+.flip:nth-child(1) .front{background:linear-gradient(135deg,rgba(255,214,224,.9),rgba(255,255,255,.6))}
+.flip:nth-child(2) .front{background:linear-gradient(135deg,rgba(226,212,250,.9),rgba(255,255,255,.6))}
+.flip:nth-child(3) .front{background:linear-gradient(135deg,rgba(212,229,255,.9),rgba(255,255,255,.6))}
+.flip:nth-child(4) .front{background:linear-gradient(135deg,rgba(255,226,208,.9),rgba(255,255,255,.6))}
+
+/* Sealable promises */
+.promise{cursor:pointer;user-select:none}
+.promise span{display:inline-block}
+.promise.sealed{background:rgba(255,218,230,.8);border-left-color:var(--rose-deep)}
+.promise.sealed span{animation:pop .5s ease}
+@keyframes pop{40%{transform:scale(1.7)}}
+.sealed-msg{text-align:center;font-family:var(--serif);font-style:italic;font-size:1.2rem;color:var(--rose-deep);min-height:2em;margin-top:24px;opacity:0;transition:opacity 1s}
+.sealed-msg.show{opacity:1}
+.final-text.in .word{opacity:1;transform:none}
+
+/* ===== v3: MAROON & BLACK theme (colors come from CONFIG.theme in the script) ===== */
+:root{--maroon:#800020;--maroon-dark:#4a0011;--black:#0a0506;--accent:#ff7a93;--ink:#f6e4e6;--soft:#c9a0a8;
+  --rose:#b0183e;--rose-deep:var(--accent);--glass:rgba(255,255,255,.06)}
+::selection{background:var(--maroon);color:#fff}
+body{background:radial-gradient(ellipse at 15% 0%,var(--maroon-dark),transparent 55%),radial-gradient(ellipse at 95% 100%,var(--maroon),transparent 50%),linear-gradient(160deg,var(--black),#1a0509 60%,var(--black));background-size:auto;background-attachment:fixed;animation:none;color:var(--ink)}
+.b1{background:var(--maroon);opacity:.55}.b2{background:#3d0a1c;opacity:.7}
+#progress{background:linear-gradient(90deg,var(--maroon),var(--accent))}
+.intro{background:rgba(8,3,5,.6);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.glass{border:1px solid rgba(190,40,75,.4);box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 26px rgba(128,0,32,.18)}
+.nav{border:1px solid rgba(190,40,75,.4);background:rgba(20,5,9,.6)}
+.nav a:hover,.nav a.active{background:var(--maroon);color:#fff}
+.btn{background:linear-gradient(135deg,#a3173a,#5a0014);box-shadow:0 10px 30px rgba(128,0,32,.6)}
+.btn:hover{box-shadow:0 14px 40px rgba(190,20,60,.7)}
+@keyframes glow{50%{box-shadow:0 10px 46px rgba(200,20,70,.85)}}
+h2{background:linear-gradient(90deg,#e8556f,#ffb3c1,#e8556f);background-size:200% auto;-webkit-background-clip:text;background-clip:text}
+h2 .em{-webkit-text-fill-color:initial;display:inline-block;animation:beat 2s ease-in-out infinite}
+
+/* envelope in maroon + gold seal */
+.envelope{background:#f3e1de;box-shadow:0 20px 50px rgba(0,0,0,.6),0 0 40px rgba(128,0,32,.4)}
+.envelope .letter{background:#fff6f0;color:var(--maroon)}
+.envelope .front{background:linear-gradient(#f7e9e6,#e8cfcf)}
+.envelope .flap{background:linear-gradient(#8a1030,#4a0011)}
+.envelope .seal{background:radial-gradient(circle at 35% 30%,#f6dc92,#b8862f);color:var(--maroon-dark)}
+
+/* cards */
+.face.back{background:rgba(25,5,10,.94);color:var(--ink);border:1px solid rgba(190,40,75,.4)}
+.flip:nth-child(1) .front{background:linear-gradient(135deg,rgba(128,0,32,.85),rgba(20,4,8,.8))}
+.flip:nth-child(2) .front{background:linear-gradient(135deg,rgba(90,0,22,.9),rgba(30,5,12,.8))}
+.flip:nth-child(3) .front{background:linear-gradient(135deg,rgba(150,15,45,.85),rgba(25,4,10,.8))}
+.flip:nth-child(4) .front{background:linear-gradient(135deg,rgba(70,0,17,.9),rgba(40,6,15,.8))}
+.memory{background:#fbefec;box-shadow:0 14px 34px rgba(0,0,0,.55),0 0 24px rgba(128,0,32,.25)}
+.memory .photo{background:linear-gradient(135deg,#7a0f2b,#2b0610)}
+.memory:nth-child(even) .photo{background:linear-gradient(135deg,#4a0011,#a3173a)}
+.memory h3{color:var(--maroon)}
+.memory p{color:#5b3a42}
+.promise.sealed{background:rgba(128,0,32,.4);border-left-color:var(--accent)}
+.response{box-shadow:0 0 50px rgba(190,20,60,.35)}
+
+/* extra hearts & romance */
+.apology-card{position:relative}
+.apology-card::after{content:"❤";position:absolute;right:20px;bottom:6px;font-size:2.4rem;color:var(--maroon);opacity:.7;animation:beat 1.8s ease-in-out infinite}
+.apology-sign{margin-top:22px;text-align:right;font-family:'Caveat',cursive;font-size:1.7rem;color:var(--accent)}
+.big-heart{font-size:3.4rem;margin-bottom:18px;animation:beat 1.6s ease-in-out infinite;filter:drop-shadow(0 0 18px rgba(200,20,70,.7))}
+.divider{margin-top:auto;padding-top:46px;text-align:center;letter-spacing:.5em;font-size:1.1rem;opacity:.85}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.25)}30%{transform:scale(1)}45%{transform:scale(1.18)}}
+</style>
+</head>
+<body class="locked">
+  <div id="progress"></div>
+
+  <!-- Soft background shapes + floating hearts -->
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <canvas id="particles" aria-hidden="true"></canvas>
+
+  <!-- 1. OPENING SCREEN (text comes from CONFIG near the bottom of this file) -->
+  <section id="intro" class="intro">
+    <div class="intro-inner">
+      <h1 id="introTitle"></h1>
+      <p id="introSub"></p>
+      <div class="envelope" id="envelope" aria-hidden="true">
+        <div class="letter" id="letterText"></div><div class="front"></div><div class="flap"></div><div class="seal">❤</div>
+      </div>
+      <button id="openBtn" class="btn pulse"></button>
+    </div>
+  </section>
+
+  <nav id="nav" class="nav hidden" aria-label="Sections">
+    <a href="#apology">💌 Apology</a>
+    <a href="#should">What I should have done</a>
+    <a href="#memories">💖 You</a>
+    <a href="#promises">🌹 Promises</a>
+    <a href="#final">❤️ Last words</a>
+  </nav>
+
+  <main id="main" class="hidden">
+
+    <!-- 2. APOLOGY -->
+    <section id="apology" class="section">
+      <p id="greeting" class="greeting reveal"></p>
+      <div class="glass apology-card reveal">
+        <p id="apologyText" class="apology-text"></p>
+        <p id="apologySign" class="apology-sign"></p>
+      </div>
+    </section>
+
+    <!-- 3. WHAT I SHOULD HAVE DONE -->
+    <section id="should" class="section">
+      <h2 class="reveal">What I should have done <span class="em">🥀</span></h2>
+      <p class="hint reveal">Tap a card to turn it over. 💌</p>
+      <div id="shouldGrid" class="grid"></div>
+    </section>
+
+    <!-- 4. MEMORIES / APPRECIATION -->
+    <section id="memories" class="section">
+      <h2 class="reveal">Why you matter to me <span class="em">💖</span></h2>
+      <div id="memoryGrid" class="grid"></div>
+    </section>
+
+    <!-- 5. PROMISES -->
+    <section id="promises" class="section">
+      <h2 class="reveal">What I promise <span class="em">🌹</span></h2>
+      <p class="hint reveal">Tap each promise to seal it. 🌹</p>
+      <div id="promiseList" class="promises"></div>
+      <p id="sealedMsg" class="sealed-msg" aria-live="polite"></p>
+    </section>
+
+    <!-- 6 + 7. FINAL APOLOGY + INTERACTION -->
+    <section id="final" class="section final">
+      <p id="finalText" class="final-text reveal"></p>
+      <button id="forgiveBtn" class="btn reveal"></button>
+      <div id="response" class="response glass" aria-live="polite">
+        <p id="responseText"></p>
+        <p id="signature" class="signature"></p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+/* =====================================================================
+   ✏️  EDIT HERE — everything you need to customize is in this block.
+   Replace each [PLACEHOLDER] with your own words. Keep the quotes "".
+   ===================================================================== */
+const CONFIG = {
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  🎛️  CONTROL PANEL — change the look & effects here       ║
+     ╚══════════════════════════════════════════════════════════╝ */
+  theme: {
+    maroon:     "#800020",  // main maroon (buttons, glows)
+    maroonDark: "#4a0011",  // deep maroon (backgrounds)
+    black:      "#0a0506",  // page black
+    accent:     "#ff7a93",  // light rose used for headings & small text
+    text:       "#f6e4e6",  // main text colour
+  },
+  effects: {
+    ambientHearts: 26,       // hearts floating in the background (0 = none)
+    floatingEmojis: 8,       // floating emojis in the background (0 = none)
+    emojiList: ["🌹", "💌", "🥀", "💖", "✨", "💗"],   // which emojis float
+    heartColor: "#b3123a",   // colour of floating hearts
+    petalColor: "#9c1233",   // colour of falling petals
+    mouseSparkles: true,     // sparkle trail behind the mouse (true / false)
+    petalsOnForgive: true,   // petal shower when "Forgive Me?" is clicked
+    divider: "❤️ 🌹 ❤️",     // decoration between sections
+    bigHeart: "❤️",          // beating heart above the final message
+  },
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  💌  NAMES                                                ║
+     ╚══════════════════════════════════════════════════════════╝ */
+  herName: "MUSKAN (BABUU)",
+  yourName: "HEMANK (BABYYY)",
+
+  /* ╔══════════════════════════════════════════════════════════╗
+     ║  ✏️  YOUR WORDS — replace every [PLACEHOLDER]             ║
+     ╚══════════════════════════════════════════════════════════╝ */
+
+  // 1. Opening screen
+  introTitle: "I Have Something I Need to Say... 💌",
+  introSub: "Please give me a few minutes. 🥀",
+  openButton: "Open This ❤️",
+
+  // 2. Apology  ({name} and {you} are replaced automatically)
+  greeting: "My dearest MUSKAN (#HEMU), 💌",
+  apologyMessage:
+    "Heyyy baby hEmAnK this side ik maine bhaut galti ki aapke life mai abhi tak bhaut kuch kiya jis se aap hurt hue pr mai har wo ek koshish Kiya hun jis se aap man jao aur humesa kr tai rahunga kyu ki pyar kr tai hun, mai ye nhi bol rha mai hi kiya aap uss chiz ko itna jaldi bhul jao pr mai ye cha tai hun ki mai jo kiya aap uske liye mere ko maf kr ke mere ko ek aur chance do taki mai aur aap dono waps phele jaisa sath reh sake aur mai promise kr tai hun paaka wala promise ki mai ab aise galti nhi karunga kabhi nhi karunga i hope ki aap mere ko ek chance doge aur mere life mai wapas aaoge mai aur aap dono bhaut sare sapne dheke thay sath mai usko pura karenge khus rahenge babuuuu 😘 love you more than anything 💋❤️❤️❤️ khus raho 💋❤️ stay healthy,stay happy,and stay with me 😘💋",
+  apologySign: "Forever sorry, with all my love — Hemank (Your Babyy) ❤️",
+
+  // 3. What I should have done (front = short line, back = your explanation)
+  shouldCards: [
+    { front: "I should have listened. 👂", back: "You were trying to tell me something that mattered, and I wasn't really there.💔" },
+    { front: "I should have understood your feelings. 💗", back: "Your feelings were never small. Apki feelings mere liye bohot important hai🥀" },
+    { front: "I should have communicated better. 💬", back: "I should have talked to you, not around you. Mereko sab acche se krna cahie tha🌹" },
+    { front: "I should have thought before acting. 🥺", back: "My choices affect your heart, and I forgot that. Mujhe realise nhi hua ki kitni badi galti kr rha hu aapko hurt krke 💌" },
+  ],
+
+  // 4. Memories / appreciation (icon, title, text)
+  memories: [
+  { image: "images/photo1.jpg", title: "Our first memory", text: "A moment I'll always remember. ❤️" },
+  { image: "images/photo2.jpg", title: "That day", text: "One of my favorite moments with you. 💗" },
+  { image: "images/photo3.jpg", title: "Us", text: "Some memories are simply special. ✨" },
+  { image: "images/photo4.jpg", title: "Always worth remembering", text: "I'd never trade these memories. ❤️" },
+],
+
+  // 5. Promises (add or remove lines freely)
+  promises: [
+    " I will listen before I respond. 👂",
+    " I will be honest with you, even when it's hard. 🤍",
+    " I will think about how my actions affect your heart. 💗",
+    " I will respect your space and your feelings. 🌹",
+  ],
+
+  // 6. Final apology
+  finalMessage:
+    "Baby ik aap mere pass hi rahoge aur mere sath humesa i trust our love ki aap waps aaoge fir hum wahi phale jaisa hasi khusi sath mai ek dushre ke sath hasi mazak ,ek dushre ko roast,ek dushre ko support,ek dushre ke bare mai care kr na and aur bhi bhaut kuch and hum ek dushre se bhaut pyar karnege fir sath mai rahenge ,humesa mai aapse mil ne aaunga ,uska jo excitement, ek dushre ke sath ghum na time spent kr na ,ye sb kuch jo humne socha tha wo karenge aur life time tk shaddi kr ke ek dushre ke sath rahenge ik itna aasan nhi hoga pr mai ache se padh likh kr kuch acha job karunga aapke family ko manaunga pura kosish karunga aapki family ko mana ne ka and then dono ek dushre se shadi kr ke sath rahenge life time tk 😘 💋💋💋💋 bs baby trust me one more time mai badlunga khud ko 😘humari life ko sachi bs trust me  ❤️❤️❤️❤️love you more than anything else in my life ❤️❤️❤️❤️ 🌹",
+  forgiveButton: "Forgive Me? ❤️",
+
+  // 7. After the button is clicked
+  responseMessage: "I hope aap mere pass wapas aaoge aur hum apni life waps ek sath ache se khus hoke continue karenge 😘💋❤️❤️❤️❤️❤️❤️",
+  responseNote: "Love you so so so much 💋❤️❤️🌹",
+  allSealed: "Every one of these is a promise I'm going to keep. 💖",
+};
+/* ================== END OF EDIT AREA — code below ================== */
+
+
+const $ = (sel) => document.querySelector(sel);
+
+/* ---------- Fill the page with your text ---------- */
+function fillContent() {
+  document.title = `For ${CONFIG.herName}`;
+  $("#introTitle").textContent = CONFIG.introTitle;
+  $("#introSub").textContent = CONFIG.introSub;
+  $("#openBtn").textContent = CONFIG.openButton;
+  applyTheme();
+  $("#greeting").textContent = CONFIG.greeting.replace("{name}", CONFIG.herName);
+  $("#apologySign").textContent = CONFIG.apologySign.replace("{you}", CONFIG.yourName);
+  $("#letterText").textContent = "For " + CONFIG.herName;
+  $("#finalText").innerHTML = CONFIG.finalMessage.split(" ")
+    .map((w, i) => `<span class="word" style="transition-delay:${i * 90}ms">${w}</span>`).join(" ");
+  $("#forgiveBtn").textContent = CONFIG.forgiveButton;
+  $("#responseText").textContent = CONFIG.responseMessage;
+  $("#signature").textContent = `${CONFIG.responseNote} — ${CONFIG.yourName}`;
+
+  // Decorations: heart divider after each section + beating heart before final text
+  document.querySelectorAll(".section:not(#final)").forEach((s) =>
+    s.insertAdjacentHTML("beforeend", `<div class="divider reveal">${CONFIG.effects.divider}</div>`));
+  $("#finalText").insertAdjacentHTML("beforebegin", `<div class="big-heart">${CONFIG.effects.bigHeart}</div>`);
+
+  // Apology: split into words so they can fade in one by one
+  $("#apologyText").innerHTML = CONFIG.apologyMessage
+    .split(" ")
+    .map((w, i) => `<span class="word" style="transition-delay:${i * 60}ms">${w}</span>`)
+    .join(" ");
+
+  // Flip cards (click/tap or hover to turn)
+  $("#memoryGrid").innerHTML = CONFIG.memories
+    .map(
+      (m) => `<div class="memory glass reveal">
+        <div class="photo"><img src="${m.image}" alt="${m.title}"></div>
+        <h3>${m.title}</h3>
+        <p>${m.text}</p>
+      </div>`
+    ).join("");
+
+  $("#shouldGrid").innerHTML = CONFIG.shouldCards
+    .map(
+      (c) => `<div class="flip glass reveal" tabindex="0">
+        <div class="flip-inner">
+          <div class="face front">${c.front}</div>
+          <div class="face back">${c.back}</div>
+        </div>
+      </div>`
+    )
+    .join("");
+
+  $("#promiseList").innerHTML = CONFIG.promises
+    .map((p) => `<div class="promise glass reveal" tabindex="0" role="button" aria-pressed="false"><span>♡</span><p>${p}</p></div>`)
+    .join("");
+}
+
+/* ---------- Apply the colours from the control panel ---------- */
+function applyTheme() {
+  const t = CONFIG.theme, r = document.documentElement.style;
+  r.setProperty("--maroon", t.maroon);
+  r.setProperty("--maroon-dark", t.maroonDark);
+  r.setProperty("--black", t.black);
+  r.setProperty("--accent", t.accent);
+  r.setProperty("--ink", t.text);
+}
+
+/* ---------- Opening screen -> main site ---------- */
+function setupOpen() {
+  $("#envelope").addEventListener("click", () => $("#openBtn").click());
+  $("#openBtn").addEventListener("click", () => {
+    $("#openBtn").disabled = true;
+    $("#envelope").classList.add("open");
+    setTimeout(openSite, 1500);
+  });
+  function openSite() {
+    $("#intro").classList.add("gone");
+    document.body.classList.remove("locked");
+    $("#main").classList.add("visible");
+    $("#nav").classList.add("visible");
+    $("#main").classList.remove("hidden");
+    $("#nav").classList.remove("hidden");
+    window.scrollTo(0, 0);
+    setTimeout(() => ($("#intro").style.display = "none"), 1300);
+  }
+}
+
+/* ---------- Fade-ins while scrolling ---------- */
+function setupReveal() {
+  const io = new IntersectionObserver(
+    (entries) => entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add("in");
+        io.unobserve(e.target);
+        const t = e.target; setTimeout(() => (t.style.transitionDelay = ""), 1600);
+      }
+    }),
+    { threshold: 0.2 }
+  );
+  document.querySelectorAll(".reveal").forEach((el, i) => {
+    el.style.transitionDelay = `${(i % 4) * 120}ms`;
+    io.observe(el);
+  });
+}
+
+/* ---------- Highlight current section in the nav ---------- */
+function setupNav() {
+  const links = document.querySelectorAll(".nav a");
+  const io = new IntersectionObserver(
+    (entries) => entries.forEach((e) => {
+      if (e.isIntersecting)
+        links.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === `#${e.target.id}`));
+    }),
+    { threshold: 0.5 }
+  );
+  document.querySelectorAll(".section").forEach((s) => io.observe(s));
+}
+
+/* ---------- Flip cards: tap / keyboard ---------- */
+function setupFlip() {
+  document.querySelectorAll(".flip").forEach((card) => {
+    const toggle = () => card.classList.toggle("on");
+    card.addEventListener("click", toggle);
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
+    });
+  });
+}
+
+/* ---------- Final button ---------- */
+function setupForgive() {
+  $("#forgiveBtn").addEventListener("click", () => {
+    $("#response").classList.add("show");
+    $("#forgiveBtn").style.display = "none";
+    burstHearts();
+    setTimeout(() => $("#response").scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+  });
+}
+
+/* ---------- Promises: tap to seal ---------- */
+function setupPromises() {
+  const cards = document.querySelectorAll(".promise");
+  const toggle = (c) => {
+    const on = c.classList.toggle("sealed");
+    c.setAttribute("aria-pressed", on);
+    c.querySelector("span").textContent = on ? "❤" : "♡";
+    const all = [...cards].every((x) => x.classList.contains("sealed"));
+    $("#sealedMsg").textContent = all ? CONFIG.allSealed : "";
+    $("#sealedMsg").classList.toggle("show", all);
+  };
+  cards.forEach((c) => {
+    c.addEventListener("click", () => toggle(c));
+    c.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(c); }
+    });
+  });
+}
+
+/* ---------- Scroll progress bar ---------- */
+function setupProgress() {
+  addEventListener("scroll", () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    $("#progress").style.width = (max > 0 ? (scrollY / max) * 100 : 0) + "%";
+  }, { passive: true });
+}
+
+/* ---------- Floating hearts, sparkle trail & falling petals ---------- */
+const canvas = $("#particles");
+const ctx = canvas.getContext("2d");
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let parts = [];
+
+function resize() { canvas.width = innerWidth; canvas.height = innerHeight; }
+
+function heart(burst = false) {
+  return {
+    type: "heart", ambient: !burst,
+    x: burst ? innerWidth / 2 + (Math.random() - 0.5) * 120 : Math.random() * innerWidth,
+    y: burst ? innerHeight * 0.6 : innerHeight + 20,
+    size: 8 + Math.random() * 12,
+    vy: -(burst ? 0.8 + Math.random() * 1.6 : 0.2 + Math.random() * 0.5),
+    drift: Math.random() * 6.28,
+    alpha: burst ? 0.75 : 0.3 + Math.random() * 0.25,
+  };
+}
+const emoji = () => ({ type: "emoji", ambientEmoji: true, ch: CONFIG.effects.emojiList[Math.floor(Math.random() * CONFIG.effects.emojiList.length)],
+  x: Math.random() * innerWidth, y: innerHeight + 20, size: 16 + Math.random() * 10,
+  vy: -(0.25 + Math.random() * 0.45), drift: Math.random() * 6.28, alpha: 0.5 });
+const petal = () => ({ type: "petal", x: Math.random() * innerWidth, y: -20, size: 6 + Math.random() * 6,
+  vy: 0.7 + Math.random() * 1.3, drift: Math.random() * 6.28, rot: Math.random() * 6.28, alpha: 0.65 });
+const spark = (x, y) => ({ type: "spark", x, y, size: 2 + Math.random() * 3, vy: -0.3, drift: Math.random() * 6.28, alpha: 0.8 });
+
+function draw(p) {
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  ctx.globalAlpha = p.alpha;
+  if (p.type === "heart") {
+    const s = p.size;
+    ctx.fillStyle = CONFIG.effects.heartColor;
+    ctx.beginPath();
+    ctx.moveTo(0, s * 0.3);
+    ctx.bezierCurveTo(-s, -s * 0.5, -s * 0.4, -s, 0, -s * 0.4);
+    ctx.bezierCurveTo(s * 0.4, -s, s, -s * 0.5, 0, s * 0.3);
+    ctx.fill();
+  } else if (p.type === "emoji") {
+    ctx.font = p.size + "px serif";
+    ctx.textAlign = "center";
+    ctx.fillText(p.ch, 0, 0);
+  } else if (p.type === "petal") {
+    ctx.rotate(p.rot);
+    ctx.fillStyle = CONFIG.effects.petalColor;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, p.size, p.size * 0.55, 0, 0, 6.28);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = CONFIG.theme.accent;
+    ctx.shadowColor = CONFIG.theme.accent;
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(0, 0, p.size, 0, 6.28);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  parts.forEach((p) => {
+    p.y += p.vy;
+    p.drift += 0.01;
+    p.x += Math.sin(p.drift) * (p.type === "petal" ? 0.8 : 0.4);
+    if (p.type === "petal") p.rot += 0.02;
+    if (p.type === "spark") p.alpha -= 0.025;
+    draw(p);
+  });
+  parts = parts.filter((p) => p.alpha > 0 && p.y > -30 && p.y < innerHeight + 30);
+  if (CONFIG.effects.ambientHearts > 0)
+    while (parts.filter((p) => p.ambient).length < CONFIG.effects.ambientHearts) parts.push(heart());
+  if (CONFIG.effects.floatingEmojis > 0)
+    while (parts.filter((p) => p.ambientEmoji).length < CONFIG.effects.floatingEmojis) parts.push(emoji());
+  requestAnimationFrame(animate);
+}
+
+// Little sparkles follow the mouse (not on touch screens)
+addEventListener("pointermove", (e) => {
+  if (calm || !CONFIG.effects.mouseSparkles || e.pointerType === "touch" || Math.random() > 0.5) return;
+  parts.push(spark(e.clientX, e.clientY));
+});
+
+function burstHearts() {
+  if (calm) return;
+  for (let i = 0; i < 40; i++) parts.push(heart(true));
+  if (CONFIG.effects.petalsOnForgive)
+    for (let i = 0; i < 55; i++) setTimeout(() => parts.push(petal()), i * 90);
+}
+
+/* ---------- Start everything ---------- */
+fillContent();
+setupOpen();
+setupReveal();
+setupNav();
+setupFlip();
+setupForgive();
+setupPromises();
+setupProgress();
+resize();
+addEventListener("resize", resize);
+// Spread the first hearts/emojis over the whole screen so it doesn't start empty
+for (let i = 0; i < CONFIG.effects.ambientHearts; i++) { const x = heart(); x.y = Math.random() * innerHeight; parts.push(x); }
+for (let i = 0; i < CONFIG.effects.floatingEmojis; i++) { const x = emoji(); x.y = Math.random() * innerHeight; parts.push(x); }
+if (!calm) animate();
+
+</script>
+</body>
+</html>
